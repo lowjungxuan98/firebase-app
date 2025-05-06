@@ -1,6 +1,5 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
+import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -13,8 +12,8 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase with a unique name to avoid conflicts with other Firebase instances
-const app = initializeApp(firebaseConfig, 'realtime-app');
-const database = getDatabase(app);
+// Initialize Firebase
+const app = initializeApp(firebaseConfig, 'firestore-app');
+const firestore = getFirestore(app);
 
-export { database }; 
+export { firestore }; 
