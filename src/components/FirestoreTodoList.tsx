@@ -12,23 +12,20 @@ export default function FirestoreTodoList() {
 
   // Fetch todos on component mount
   useEffect(() => {
+    const fetchTodos = async () => {
+      try {
+        const todosList = await getTodos();
+        setTodos(todosList);
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to fetch todos');
+        setLoading(false);
+        console.error(err);
+      }
+    };
+    
     fetchTodos();
   }, []);
-
-  // Fetch all todos
-  const fetchTodos = async () => {
-    try {
-      setLoading(true);
-      const todosList = await getTodos();
-      setTodos(todosList);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch todos');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Add a new todo
   const handleAddTodo = async (e: React.FormEvent) => {
@@ -53,6 +50,7 @@ export default function FirestoreTodoList() {
       ]);
       
       setNewTodoTitle('');
+      setError(null);
     } catch (err) {
       setError('Failed to add todo');
       console.error(err);
@@ -71,6 +69,8 @@ export default function FirestoreTodoList() {
       setTodos(todos.map(todo => 
         todo.id === id ? { ...todo, completed: !todo.completed } : todo
       ));
+      
+      setError(null);
     } catch (err) {
       setError('Failed to update todo');
       console.error(err);
@@ -84,6 +84,7 @@ export default function FirestoreTodoList() {
       
       // Remove the todo from the state
       setTodos(todos.filter(todo => todo.id !== id));
+      setError(null);
     } catch (err) {
       setError('Failed to delete todo');
       console.error(err);
@@ -92,7 +93,7 @@ export default function FirestoreTodoList() {
 
   return (
     <div className="max-w-md mx-auto p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Todo List</h1>
+      <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Todo List</h2>
       
       {/* Add Todo Form */}
       <form onSubmit={handleAddTodo} className="mb-6">

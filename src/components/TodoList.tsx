@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Todo } from '@/types';
-import { getTodos, createTodo, updateTodo, deleteTodo } from '@/services/todoService';
+import { subscribeTodos, createTodo, updateTodo, deleteTodo } from '@/services/todoService';
 
 export default function TodoList() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -10,25 +10,15 @@ export default function TodoList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch todos on component mount
+  // Subscribe to todos with realtime updates
   useEffect(() => {
-    fetchTodos();
-  }, []);
-
-  // Fetch all todos
-  const fetchTodos = async () => {
-    try {
-      setLoading(true);
-      const todosList = await getTodos();
+    const unsubscribe = subscribeTodos((todosList) => {
       setTodos(todosList);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch todos');
-      console.error(err);
-    } finally {
       setLoading(false);
-    }
-  };
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   // Add a new todo
   const handleAddTodo = async (e: React.FormEvent) => {
@@ -36,23 +26,12 @@ export default function TodoList() {
     if (!newTodoTitle.trim()) return;
 
     try {
-      const id = await createTodo({
+      await createTodo({
         title: newTodoTitle,
         completed: false,
       });
-      
-      // Add the new todo to the state
-      setTodos([
-        {
-          id,
-          title: newTodoTitle,
-          completed: false,
-          createdAt: new Date(),
-        },
-        ...todos,
-      ]);
-      
       setNewTodoTitle('');
+      setError(null);
     } catch (err) {
       setError('Failed to add todo');
       console.error(err);
@@ -64,13 +43,8 @@ export default function TodoList() {
     try {
       const todoToUpdate = todos.find(todo => todo.id === id);
       if (!todoToUpdate) return;
-
       await updateTodo(id, { completed: !todoToUpdate.completed });
-      
-      // Update the todo in the state
-      setTodos(todos.map(todo => 
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      ));
+      setError(null);
     } catch (err) {
       setError('Failed to update todo');
       console.error(err);
@@ -81,9 +55,7 @@ export default function TodoList() {
   const handleDeleteTodo = async (id: string) => {
     try {
       await deleteTodo(id);
-      
-      // Remove the todo from the state
-      setTodos(todos.filter(todo => todo.id !== id));
+      setError(null);
     } catch (err) {
       setError('Failed to delete todo');
       console.error(err);
@@ -92,7 +64,7 @@ export default function TodoList() {
 
   return (
     <div className="max-w-md mx-auto p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Todo List</h1>
+      <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Todo List</h2>
       
       {/* Add Todo Form */}
       <form onSubmit={handleAddTodo} className="mb-6">

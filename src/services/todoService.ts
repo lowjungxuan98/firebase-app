@@ -1,4 +1,4 @@
-import { ref, push, set, get, update, remove, query, orderByChild } from 'firebase/database';
+import { ref, push, set, get, update, remove, onValue } from 'firebase/database';
 import { database } from '@/lib/firebase';
 import { Todo } from '@/types';
 
@@ -17,7 +17,37 @@ export const createTodo = async (todo: Omit<Todo, 'id' | 'createdAt'>): Promise<
   return newTodoRef.key || '';
 };
 
-// Read all todos
+// Subscribe to todos with realtime updates
+export const subscribeTodos = (callback: (todos: Todo[]) => void) => {
+  const todosRef = ref(database, TODOS_REF);
+  
+  // Set up realtime listener
+  const unsubscribe = onValue(todosRef, (snapshot) => {
+    const todos: Todo[] = [];
+    
+    if (snapshot.exists()) {
+      snapshot.forEach((childSnapshot) => {
+        const data = childSnapshot.val();
+        todos.push({
+          id: childSnapshot.key || '',
+          title: data.title,
+          completed: data.completed,
+          createdAt: new Date(data.createdAt),
+        });
+      });
+      
+      // Sort todos by createdAt in descending order (newest first)
+      todos.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
+    
+    callback(todos);
+  });
+  
+  // Return the unsubscribe function
+  return unsubscribe;
+};
+
+// Read all todos - kept for compatibility
 export const getTodos = async (): Promise<Todo[]> => {
   const todosRef = ref(database, TODOS_REF);
   const snapshot = await get(todosRef);
